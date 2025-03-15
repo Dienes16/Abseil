@@ -1,0 +1,38 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "abseil:climbing_rope",
+          "conditions": [
+            {
+              "condition": "minecraft:survives_explosion"
+            },
+            {
+              "condition": "minecraft:any_of",
+              "terms": [
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "abseil:climbing_rope",
+                  "properties": {
+                    "climbing_rope_segment": "top_bottom"
+                  }
+                },
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "abseil:climbing_rope",
+                  "properties": {
+                    "climbing_rope_segment": "top"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

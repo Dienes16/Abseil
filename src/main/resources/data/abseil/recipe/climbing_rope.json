@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "L",
+    "S",
+    "L"
+  ],
+  "key": {
+    "S": "minecraft:slime_ball",
+    "L": "minecraft:lead"
+  },
+  "result": {
+    "id": "abseil:climbing_rope",
+    "count": 1
+  }
+}
