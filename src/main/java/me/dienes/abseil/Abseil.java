@@ -13,7 +13,7 @@ public class Abseil implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Initializing " + MOD_ID);
 
-		AbseilItems.registerItems();
-		AbseilBlocks.registerBlocks();
+		AbseilItems.initialize();
+		AbseilBlocks.initialize();
 	}
 }
