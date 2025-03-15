@@ -5,12 +5,11 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ItemScatterer;
@@ -22,14 +21,15 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
+import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
 
 public class ClimbingRopeBlock extends Block implements Waterloggable {
-    public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
     public static final EnumProperty<ClimbingRopeSegment> CLIMBING_ROPE_SEGMENT = EnumProperty.of("climbing_rope_segment", ClimbingRopeSegment.class);
     public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 
@@ -80,20 +80,17 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
         return getDefaultState().with(WATERLOGGED, ctx.getWorld().getFluidState(ctx.getBlockPos()).isOf(Fluids.WATER));
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public FluidState getFluidState(BlockState state) {
         return state.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
+    public List<ItemStack> getDroppedStacks(BlockState state, LootWorldContext.Builder builder) {
         // Disable default drops, done manually in onStateReplaced()
         return Collections.emptyList();
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (isTopSegment(state)) {
@@ -109,7 +106,7 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
                 // Drop the rope item manually one block above the rope to help players collect it
                 if (world instanceof ServerWorld) {
                     // Base drop on loot table
-                    LootContextParameterSet.Builder builder = new LootContextParameterSet.Builder((ServerWorld) world)
+                    LootWorldContext.Builder builder = new LootWorldContext.Builder((ServerWorld) world)
                         .add(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos))
                         .add(LootContextParameters.TOOL, ItemStack.EMPTY);
 
@@ -130,7 +127,6 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
         super.onStateReplaced(state, world, pos, newState, moved);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return switch (state.get(FACING)) {
@@ -141,7 +137,6 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
         };
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
         if (isAttached(world, pos)) {
@@ -151,23 +146,21 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
         }
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
         // Prevent calls of scheduledTick()
         //super.randomTick(state, world, pos, random);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos) {
+    public BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
         if (state.get(WATERLOGGED)) {
-            world.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+            tickView.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
         }
 
         if (direction == Direction.UP) {
             if (!isAttached(world, pos)) {
-                world.scheduleBlockTick(pos, this, 1);
+                tickView.scheduleBlockTick(pos, this, 1);
             }
         } else if (direction == Direction.DOWN) {
             if (!neighborState.isOf(this)) {
@@ -178,10 +171,9 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
             }
         }
 
-        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
         if (!oldState.isOf(this)) {
@@ -206,7 +198,7 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
         return (state.get(CLIMBING_ROPE_SEGMENT) == ClimbingRopeSegment.TOP || state.get(CLIMBING_ROPE_SEGMENT) == ClimbingRopeSegment.TOP_BOTTOM);
     }
 
-    protected boolean isAttached(WorldAccess world, BlockPos pos) {
+    protected boolean isAttached(WorldView world, BlockPos pos) {
         BlockState blockStateAbove = world.getBlockState(pos.up());
 
         if (blockStateAbove.isOf(this))

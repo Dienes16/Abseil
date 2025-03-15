@@ -61,7 +61,7 @@ public class ClimbingRopeItem extends Item {
             itemStack.decrement(1);
         }
 
-        return ActionResult.success(world.isClient);
+        return ActionResult.SUCCESS;
     }
 
     private void attachBelowBlock(World world, BlockPos blockPos) {
