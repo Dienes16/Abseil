@@ -1,21 +1,17 @@
 package me.dienes.abseil;
 
 import net.minecraft.block.*;
+import net.minecraft.entity.Entity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -25,10 +21,7 @@ import net.minecraft.world.WorldView;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-
-public class ClimbingRopeBlock extends Block implements Waterloggable {
+public class ClimbingRopeBlock extends Block implements Waterloggable, ModifiableDropPos {
     public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
     public static final EnumProperty<ClimbingRopeSegment> CLIMBING_ROPE_SEGMENT = EnumProperty.of("climbing_rope_segment", ClimbingRopeSegment.class);
     public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
@@ -86,12 +79,6 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, LootWorldContext.Builder builder) {
-        // Disable default drops, done manually in onStateReplaced()
-        return Collections.emptyList();
-    }
-
-    @Override
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (isTopSegment(state)) {
             if (!state.isOf(newState.getBlock())) {
@@ -101,25 +88,6 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
                     TripwireHookBlockHelper.setPowered(world, blockPosAbove, false);
                     TripwireHookBlockHelper.playDetachSound(world, blockPosAbove);
                     // TODO: Necessary to call world.emitGameEvent(GameEvent.BLOCK_CHANGE, blockPos, GameEvent.Emitter.of(playerEntity, blockState))?
-                }
-
-                // Drop the rope item manually one block above the rope to help players collect it
-                if (world instanceof ServerWorld) {
-                    // Base drop on loot table
-                    LootWorldContext.Builder builder = new LootWorldContext.Builder((ServerWorld) world)
-                        .add(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos))
-                        .add(LootContextParameters.TOOL, ItemStack.EMPTY);
-
-                    // Call base class' version of getDroppedStacks() because ours has been disabled
-                    super.getDroppedStacks(state, builder).forEach(
-                        itemStack -> ItemScatterer.spawn(
-                            world,
-                            blockPosAbove.getX(),
-                            blockPosAbove.getY(),
-                            blockPosAbove.getZ(),
-                            itemStack
-                        )
-                    );
                 }
             }
         }
@@ -188,6 +156,20 @@ public class ClimbingRopeBlock extends Block implements Waterloggable {
         }
 
         super.onBlockAdded(state, world, pos, oldState, notify);
+    }
+
+    @Override
+    public BlockPos getDropPos(BlockState state, World world, BlockPos originalPos, Entity entity) {
+        // Try to drop the hook one block above to help the player collect it, if there is air.
+        // Do this also if the rope is broken by the world, as that can happen when the player breaks the tripwire hook.
+        if (isTopSegment(state)) {
+            BlockPos newPos = originalPos.up().up();
+
+            if (world.isAir(newPos))
+                return newPos;
+        }
+
+        return originalPos;
     }
 
     protected boolean canUnrollBeneath(World world, BlockPos pos) {

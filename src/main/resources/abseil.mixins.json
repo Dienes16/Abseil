@@ -3,6 +3,8 @@
 	"package": "me.dienes.abseil.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"WorldMixin",
+		"BlockMixin",
 		"LivingEntityMixin"
 	],
 	"injectors": {
