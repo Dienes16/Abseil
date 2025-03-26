@@ -3,7 +3,10 @@
 	"package": "me.dienes.abseil.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"LivingEntityMixin"
+		"WorldMixin",
+		"BlockMixin",
+		"LivingEntityMixin",
+		"TripwireHookBlockMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
