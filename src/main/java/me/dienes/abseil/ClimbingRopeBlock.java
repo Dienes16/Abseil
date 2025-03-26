@@ -79,8 +79,9 @@ public class ClimbingRopeBlock extends Block implements Waterloggable, Modifiabl
     }
 
     @Override
-    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+    public void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
         if (isTopSegment(state)) {
+            BlockState newState = world.getBlockState(pos);
             if (!state.isOf(newState.getBlock())) {
                 BlockPos blockPosAbove = pos.up();
                 BlockState blockStateAbove = world.getBlockState(blockPosAbove);
@@ -92,7 +93,7 @@ public class ClimbingRopeBlock extends Block implements Waterloggable, Modifiabl
             }
         }
 
-        super.onStateReplaced(state, world, pos, newState, moved);
+        super.onStateReplaced(state, world, pos, moved);
     }
 
     @Override

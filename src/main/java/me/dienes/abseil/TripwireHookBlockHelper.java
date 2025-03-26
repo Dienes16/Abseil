@@ -22,10 +22,10 @@ public class TripwireHookBlockHelper {
 
         world.setBlockState(pos, newState, Block.NOTIFY_ALL);
 
-        world.updateNeighborsAlways(pos, newState.getBlock());
+        world.updateNeighborsAlways(pos, newState.getBlock(), null);
 
         // Second update necessary for strong redstone power
-        world.updateNeighborsAlways(pos.offset(newState.get(FACING).getOpposite()), newState.getBlock());
+        world.updateNeighborsAlways(pos.offset(newState.get(FACING).getOpposite()), newState.getBlock(), null);
     }
 
     public static void playAttachSound(World world, BlockPos pos) {
